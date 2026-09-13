@@ -73,10 +73,6 @@ git@github.com:deepseek-ai/deepseek-harness.git
 | `incomingLimit` / `dirtyFileLimit` | 20 | 变更预览上限 |
 | `historyLimit` | 30 | 面板读取的状态文件条数 |
 
-## 为什么没有引擎委托
-
-`apply` **只走插件本地序列**。官方 dsh 从未承诺过升级引擎（无 roadmap、无 issue、无 release note），预埋一条对不存在接口的调用（猜命令名、猜输出 schema）是投机：官方将来若用别的命令名，它是死代码；若恰好同名而语义不同，探测命中后打进未知接口，行为不可预期。若官方引擎真的落地，委托逻辑届时按其**真实文档**补在这里即可（约 30 行）。
-
 ## 开发
 
 ```bash
