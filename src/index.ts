@@ -192,8 +192,12 @@ export class UpdateGateway extends TypertRemoteService {
   /**
    * Probe whether the running launcher ships the `dsh update` engine.
    *
-   * The probe runs the launcher's own argument surface (`update --help`
-   * exits zero only when the subcommand exists) and is cached per process.
+   * The probe runs the launcher's own argument surface (`update --help`) and
+   * requires the SUBCOMMAND's own help: a commander program answers any
+   * `--help` with its top-level usage and exit code 0 — including a dsh
+   * generation with no `update` command at all — so the exit code alone
+   * cannot distinguish them. The engine exists iff the printed usage names
+   * the update command itself (`Usage: dsh update …`). Cached per process.
    */
   private async probeEngine(): Promise<boolean> {
     if (this.engineAvailable !== undefined) return this.engineAvailable
@@ -207,8 +211,8 @@ export class UpdateGateway extends TypertRemoteService {
       [...process.execArgv, entry, 'update', '--help'],
       { cwd: process.cwd(), timeoutMs: 20_000 },
     )
-    this.engineAvailable = probe.ok
-    return probe.ok
+    this.engineAvailable = probe.ok && /^Usage:\s+\S+\s+update\b/m.test(probe.stdout)
+    return this.engineAvailable
   }
 
   /** Version facts and history for the panel's at-rest view. */

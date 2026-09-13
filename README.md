@@ -70,7 +70,7 @@ git@github.com:deepseek-ai/deepseek-harness.git
 
 ## 升级引擎委托
 
-`apply` 先探测运行中的启动器是否自带 `dsh update`（`update --help` 退出码，按进程缓存）：有则委托 `dsh update apply`（引擎拥有多面关停与 pid 登记），没有才走插件本地序列。面板内的**检查始终可用**。
+`apply` 先探测运行中的启动器是否自带 `dsh update`（`update --help` 的输出须是 `update` 子命令自己的 usage 而非顶层帮助 —— commander 对任何 `--help` 都打印顶层帮助并以 0 退出，仅看退出码会把没有引擎的版本误判为有；按进程缓存）：有则委托 `dsh update apply`（引擎拥有多面关停与 pid 登记），没有才走插件本地序列。面板内的**检查始终可用**。
 
 ## 开发
 

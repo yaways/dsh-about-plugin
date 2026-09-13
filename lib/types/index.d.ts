@@ -74,8 +74,12 @@ export declare class UpdateGateway extends TypertRemoteService {
     /**
      * Probe whether the running launcher ships the `dsh update` engine.
      *
-     * The probe runs the launcher's own argument surface (`update --help`
-     * exits zero only when the subcommand exists) and is cached per process.
+     * The probe runs the launcher's own argument surface (`update --help`) and
+     * requires the SUBCOMMAND's own help: a commander program answers any
+     * `--help` with its top-level usage and exit code 0 — including a dsh
+     * generation with no `update` command at all — so the exit code alone
+     * cannot distinguish them. The engine exists iff the printed usage names
+     * the update command itself (`Usage: dsh update …`). Cached per process.
      */
     private probeEngine;
     /** Version facts and history for the panel's at-rest view. */
