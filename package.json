@@ -2,6 +2,13 @@
   "name": "dsh-about-plugin",
   "description": "About panel and self-upgrade facade for DeepSeek Harness: version facts, channel-aware update checks, and a supervised source upgrade with restart, exposed to the Web Settings dialog over Typert Remote",
   "version": "0.1.0",
+  "keywords": [
+    "dsh-plugin",
+    "deepseek-harness",
+    "deepseek",
+    "update",
+    "about-panel"
+  ],
   "publishConfig": {
     "access": "public"
   },

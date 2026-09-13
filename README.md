@@ -17,9 +17,15 @@ DeepSeek Harness 的「关于」面板与自助升级插件：在 Web 设置对�
 ## 安装
 
 ```bash
+# 从 npm（发布后）：
+dsh plugin --profile web add dsh-about-plugin
+# 或从 GitHub / 本地路径：
+dsh plugin --profile web add github:yaways/dsh-about-plugin
 dsh plugin --profile web add /path/to/dsh-about-plugin
 # 重启 dsh 后生效（安装只是新增惰性依赖，不触碰运行中的进程）
 ```
+
+> pnpm 安装时会提示 peer dependencies 未满足（`@deepseek-ai/cordis` 等）——这是**预期行为**：对等依赖在运行时经 profile 模块回退解析到 dsh 安装本身，不从 registry 安装。
 
 卸载：`dsh plugin --profile web remove dsh-about-plugin`。
 
