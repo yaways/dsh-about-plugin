@@ -25,9 +25,11 @@ dsh plugin --profile web add /path/to/dsh-about-plugin
 # 重启 dsh 后生效（安装只是新增惰性依赖，不触碰运行中的进程）
 ```
 
+> **源码检出的 dsh**（git clone 运行）：命令需经 pnpm 脚本——`pnpm dsh plugin --profile web add dsh-about-plugin`，其余 `dsh ...` 命令同理（官方 [publish 教程](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/basic/publish.md)的同一约定）。npm 安装的 dsh 直接用裸 `dsh`。
+
 > pnpm 安装时会提示 peer dependencies 未满足（`@deepseek-ai/cordis` 等）——这是**预期行为**：对等依赖在运行时经 profile 模块回退解析到 dsh 安装本身，不从 registry 安装。
 
-卸载：`dsh plugin --profile web remove dsh-about-plugin`。
+卸载：`dsh plugin --profile web remove dsh-about-plugin`（源码检出形态为 `pnpm dsh plugin ...`）。
 
 ## 架构
 
