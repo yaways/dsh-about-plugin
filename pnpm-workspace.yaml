@@ -1,0 +1,5 @@
+# Settings-only workspace file (no packages — this is a single-package repo).
+# pnpm 10+ blocks any dependency shipping an install script until it is
+# reviewed; tsdown pulls esbuild, whose native-binary install we need.
+allowBuilds:
+  esbuild: true

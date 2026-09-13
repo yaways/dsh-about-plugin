@@ -1,0 +1,17 @@
+/**
+ * Panel styles, shipped as one injected stylesheet.
+ *
+ * A standalone browser bundle cannot lean on the repository's CSS-module
+ * pipeline, so the panel owns a small prefixed stylesheet injected once at
+ * factory execution (the same contract the pipeline's virtual loader gives
+ * in-tree plugins: a tagged style at materialization). Token variables come
+ * from the shell's design-token layer the settings dialog already renders
+ * under, with safe fallbacks for standalone embedding.
+ */
+/** The stylesheet text; every class is namespaced under `dsh-about-`. */
+export declare const PANEL_CSS = "\n.dsh-about-root {\n  display: flex;\n  flex-direction: column;\n  gap: 20px;\n  max-width: 720px;\n}\n.dsh-about-card {\n  border: 1px solid var(--dsw-line, rgba(0, 0, 0, 0.12));\n  border-radius: 12px;\n  padding: 16px 20px;\n  display: flex;\n  flex-direction: column;\n  gap: 8px;\n}\n.dsh-about-cardTitle {\n  font-size: 13px;\n  font-weight: 600;\n  opacity: 0.85;\n  margin: 0;\n}\n.dsh-about-headline {\n  display: flex;\n  align-items: baseline;\n  gap: 10px;\n  flex-wrap: wrap;\n}\n.dsh-about-version {\n  font-size: 22px;\n  font-weight: 650;\n  margin: 0;\n  font-variant-numeric: tabular-nums;\n}\n.dsh-about-fact {\n  display: flex;\n  gap: 8px;\n  font-size: 12.5px;\n  opacity: 0.8;\n  word-break: break-all;\n}\n.dsh-about-factLabel {\n  flex: none;\n  min-width: 88px;\n  opacity: 0.7;\n}\n.dsh-about-row {\n  display: flex;\n  align-items: center;\n  gap: 10px;\n  flex-wrap: wrap;\n}\n.dsh-about-note {\n  margin: 0;\n  font-size: 12.5px;\n  opacity: 0.75;\n}\n.dsh-about-warn {\n  border-color: var(--dsw-warning-line, rgba(191, 128, 0, 0.4));\n}\n.dsh-about-commits {\n  margin: 4px 0 0;\n  padding: 0;\n  list-style: none;\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  max-height: 220px;\n  overflow: auto;\n}\n.dsh-about-commit {\n  font-family: var(--dsw-font-mono, ui-monospace, monospace);\n  font-size: 12px;\n  display: flex;\n  gap: 8px;\n  align-items: baseline;\n}\n.dsh-about-commitSha {\n  opacity: 0.55;\n  flex: none;\n}\n.dsh-about-history {\n  margin: 0;\n  padding: 0;\n  list-style: none;\n  display: flex;\n  flex-direction: column;\n  gap: 6px;\n  max-height: 240px;\n  overflow: auto;\n}\n.dsh-about-historyRow {\n  display: flex;\n  gap: 10px;\n  font-size: 12.5px;\n  align-items: baseline;\n}\n.dsh-about-historyTime {\n  opacity: 0.55;\n  flex: none;\n  font-variant-numeric: tabular-nums;\n}\n.dsh-about-historyEvent {\n  flex: none;\n  font-weight: 550;\n}\n.dsh-about-historyDetail {\n  opacity: 0.75;\n  word-break: break-all;\n}\n.dsh-about-error {\n  color: var(--dsw-danger, #c0392b);\n  font-size: 12.5px;\n  margin: 0;\n  white-space: pre-wrap;\n  word-break: break-word;\n}\n.dsh-about-banner {\n  border: 1px solid var(--dsw-line, rgba(0, 0, 0, 0.12));\n  border-radius: 12px;\n  padding: 12px 16px;\n  font-size: 13px;\n  background: var(--dsw-surface-raised, rgba(127, 127, 127, 0.06));\n}\n.dsh-about-actions {\n  display: flex;\n  gap: 10px;\n  flex-wrap: wrap;\n}\n";
+/** Tag attribute identifying the injected style element. */
+export declare const STYLE_TAG_ID = "dsh-about-plugin/panel";
+/** Inject the stylesheet once per document. */
+export declare function ensurePanelStyles(): void;
+//# sourceMappingURL=styles.d.ts.map

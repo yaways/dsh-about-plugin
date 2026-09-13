@@ -1,0 +1,17 @@
+# dsh-about-plugin bundle layer: the Host row for the About / self-upgrade
+# plugin. The row references this package by name, so Node resolution finds
+# the installed code (linked checkout during development, registry copy after
+# `dsh plugin add dsh-about-plugin`).
+#
+# The row's `config` is the plugin's validated configuration; see
+# src/config.ts for every accepted field. Notable defaults:
+#   trackedRef: the git ref the source channel follows (default 'master')
+#   originAllowlist: git origins fetch/pull may run against
+#
+# Removing this bundle (`dsh plugin remove dsh-about-plugin`) removes the
+# panel and the update Remote only; the launcher keeps owning any engine-side
+# update machinery.
+
+- insert:
+    - id: dsh-about-plugin
+      name: dsh-about-plugin
