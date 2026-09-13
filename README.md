@@ -17,7 +17,7 @@ DeepSeek Harness 的「关于」面板与自助升级插件：在 Web 设置对�
 ## 安装
 
 ```bash
-# 从 npm（发布后）：
+# 从 npm：
 dsh plugin --profile web add dsh-about-plugin
 # 或从 GitHub / 本地路径：
 dsh plugin --profile web add github:yaways/dsh-about-plugin
@@ -90,9 +90,10 @@ node scripts/verify-browser.mjs "<带 token 的服务器 URL>" [截图目录]   
 
 对等依赖在**运行时**通过 profile 模块回退（`$DSH_HOME/profiles/node_modules`）解析，与 `@yaways/dsh-subagent-claude-code-wrapper` 的先例一致；本地开发由 `scripts/link-dev-deps.mjs` 提供同样的解析（无同级检出时优雅跳过，git 克隆安装不受影响）。
 
-## 已验证（本轮）
+## 已验证
 
-- 一次性 profile（`DSH_HOME=/tmp/...`）真实安装 + 启动；
+- **npm 发布实装**：`dsh-about-plugin@0.1.0` 发布后从 registry 干净安装进一次性 profile，启动图行、`client.js` 下发、`update/status` RPC、浏览器级 9 项检查全部通过；
+- 一次性 profile 本地/tarball 安装 + 启动；
 - 启动图（`window.__DSH_BOOT__`）含 `dsh-about-plugin` 行与正确的 inject 边；`/plugins/??dsh-about-plugin/client.js` 可取；
 - HTTP RPC：`update/status`（版本事实）、`update/check`（真实网络 fetch、领先/落后/脏树判定）、`update/apply`（脏树安全拒绝）全部往返；
 - Playwright 浏览器级：设置 → 关于 打开、版本/形态/插件版本渲染、检查按钮真实 RPC、脏树提示、升级按钮禁用、零页面错误。
