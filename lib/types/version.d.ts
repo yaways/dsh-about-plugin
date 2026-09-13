@@ -13,8 +13,6 @@
  * @returns negative when `left < right`, 0 when equal, positive when greater.
  */
 export declare function compareVersions(left: string, right: string): number;
-/** Whether `version` satisfies `version >= minimum` under SemVer ordering. */
-export declare function atLeast(version: string, minimum: string): boolean;
 /** Resolve the DSH home directory exactly as the launcher does. */
 export declare function resolveDshHome(): string;
 //# sourceMappingURL=version.d.ts.map

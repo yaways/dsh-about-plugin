@@ -7,7 +7,7 @@ import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-cli
 import type { ApplyResult, CheckResult, UpdateStatus } from '../schemas.ts';
 /** Registration-side Remote face the section consumes. */
 export interface AboutSectionInjected {
-    /** Read the at-rest status (version facts, engine, channels, history). */
+    /** Read the at-rest status (version facts, channels, history). */
     readonly status: () => Promise<UpdateStatus>;
     /** Run a channel-aware update check. */
     readonly check: () => Promise<CheckResult>;

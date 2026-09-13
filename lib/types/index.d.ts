@@ -9,25 +9,24 @@
  * half mounts its own `./remote` artifact, so nothing here requires a change
  * in the application's Remote assembly.
  *
- * Version gating follows the published plan: the plugin declares
- * `engines.dsh` in its manifest, checks the running installation's version at
- * mount, and REPORTS a requirement instead of throwing — a too-old engine
- * shows its requirement in the panel, not a broken panel.
+ * The apply path is entirely plugin-local: it runs its own supervised
+ * sequence for this surface. There is deliberately NO delegation to a
+ * launcher-side update engine — no released dsh ships one, and pre-wiring a
+ * call against a command name and output shape that do not exist is
+ * speculation (a future engine may use a different subcommand or schema).
+ * If an official engine ever lands, the delegation belongs here and is
+ * written against its real, documented interface.
  */
 import type { Context } from '@deepseek-ai/cordis';
 import { TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol';
 import { type CommandRunner } from './commands.ts';
 import type { ApplyResult, CheckResult, UpdateStatus, VersionFacts } from './schemas.ts';
-/** Minimum dsh version whose launcher ships the `dsh update` engine. */
-export declare const ENGINE_REQUIRED_VERSION = "0.2.0";
-/** Test seams: production defaults are the real runner, spawner, and prober. */
+/** Test seams: production defaults are the real runner and spawner. */
 export interface GatewayTools {
     /** Command runner; defaults to the real bounded spawner. */
     readonly runner?: CommandRunner;
     /** Supervisor spawn; defaults to the real detached spawn. */
     readonly spawner?: (planPath: string) => void;
-    /** Engine probe override. */
-    readonly engineProbe?: () => Promise<boolean>;
     /** Installation facts override; defaults to live discovery. */
     readonly facts?: VersionFacts;
 }
@@ -53,9 +52,6 @@ export declare class UpdateGateway extends TypertRemoteService {
     private readonly facts;
     private readonly runner;
     private readonly spawner;
-    private readonly engineProbe;
-    /** Lazily probed engine availability (cached after the first apply). */
-    private engineAvailable;
     constructor(ctx: Context, config?: unknown, tools?: GatewayTools);
     /** Channel configuration derived from the row config. */
     private get channelConfig();
@@ -71,30 +67,17 @@ export declare class UpdateGateway extends TypertRemoteService {
     private reconcilePendingAttempt;
     /** Availability rows for both channels under the current form. */
     private channelRows;
-    /**
-     * Probe whether the running launcher ships the `dsh update` engine.
-     *
-     * The probe runs the launcher's own argument surface (`update --help`) and
-     * requires the SUBCOMMAND's own help: a commander program answers any
-     * `--help` with its top-level usage and exit code 0 — including a dsh
-     * generation with no `update` command at all — so the exit code alone
-     * cannot distinguish them. The engine exists iff the printed usage names
-     * the update command itself (`Usage: dsh update …`). Cached per process.
-     */
-    private probeEngine;
     /** Version facts and history for the panel's at-rest view. */
     status(): Promise<UpdateStatus>;
     /** Channel-aware update check: per-channel answers, never merged. */
     check(): Promise<CheckResult>;
     /**
-     * Start (or delegate) the supervised upgrade.
+     * Start the plugin-local supervised upgrade for this surface.
      *
      * Preflight fails loud before any change: the source channel requires a
-     * clean worktree and an allowlisted origin. With the launcher-side engine
-     * present the call delegates to `dsh update apply`; otherwise the
-     * plugin-local supervisor runs the recorded sequence for this single
-     * surface. Either way the response reaches the client before this surface
-     * exits.
+     * clean worktree and an allowlisted origin. The supervisor runs the
+     * recorded sequence only after this pid exits; the response reaches the
+     * client before this surface exits.
      */
     apply(): Promise<ApplyResult>;
 }

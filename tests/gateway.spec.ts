@@ -1,7 +1,7 @@
 /**
  * The `update` Remote service: RPC surface, status assembly, reconciliation,
  * and the apply flow's gates, against a real cordis Context with scripted
- * tools (runner, spawner, engine probe, facts).
+ * tools (runner, spawner, facts).
  */
 
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
@@ -64,7 +64,6 @@ async function mount(
     facts,
     runner: runner(script),
     spawner: planPath => { spawned.push(planPath) },
-    engineProbe: () => Promise.resolve(false),
   })
   return { ctx, gateway, spawned }
 }
@@ -119,14 +118,12 @@ describe('resolveConfig', () => {
 })
 
 describe('status', () => {
-  it('assembles facts, engine, channels, and history', async () => {
+  it('assembles facts, channels, and history', async () => {
     const dir = home()
     const { gateway } = await mount(SOURCE_FACTS, aheadScript())
     const status = await gateway.status()
     expect(status.dsh.version).toBe('0.1.5-rc.2')
     expect(status.dsh.form).toBe('source')
-    expect(status.engine.requiredVersion).toBe('0.2.0')
-    expect(status.engine.available).toBeNull()
     expect(status.channels).toEqual([
       { channel: 'source', available: true },
       { channel: 'npm', available: true },
@@ -274,84 +271,27 @@ describe('apply', () => {
     expect(entries.at(-1)?.from).toBe('aaaaaaaaaaaaaaaaaaaa')
   })
 
-  it('delegates to the launcher engine when the probe answers', async () => {
-    const dir = home()
-    const spawned: string[] = []
-    const ctx = new Context()
-    contexts.push(ctx)
-    // The engine probe/apply run process.execPath with the live argv shape.
-    const entry = process.argv[1] ?? 'dsh'
-    const applyKey = [process.execPath, ...process.execArgv, entry, 'update', 'apply', '--json'].join(' ')
-    const gateway = new UpdateGateway(ctx, {}, {
-      facts: SOURCE_FACTS,
-      runner: runner(aheadScript({
-        [applyKey]: { ok: true, stdout: '{"accepted":true}' },
-      })),
-      spawner: planPath => { spawned.push(planPath) },
-      engineProbe: () => Promise.resolve(true),
-    })
-    const result = await gateway.apply()
-    expect(result.accepted).toBe(true)
-    expect(result.mode).toBe('engine')
-    expect(spawned).toEqual([])
-    const { readEntries } = await import('../src/status-file.ts')
-    expect(readEntries(dir, 10).at(-1)?.detail).toContain('launcher update engine')
-  })
-})
-
-describe('engine probe (production default)', () => {
-  // The real probeEngine, reached by NOT overriding tools.engineProbe.
-  const entry = process.argv[1] ?? ''
-  const probeKey = [process.execPath, ...process.execArgv, entry, 'update', '--help'].join(' ')
-  const applyKey = [process.execPath, ...process.execArgv, entry, 'update', 'apply', '--json'].join(' ')
-
-  async function mountWithRealProbe(
-    script: Record<string, { ok: boolean, stdout?: string, stderr?: string }>,
-  ): Promise<{ gateway: UpdateGateway, spawned: string[] }> {
-    const spawned: string[] = []
+  it('never invokes a launcher update command: apply is plugin-local only', async () => {
+    home()
+    const calls: Array<{ command: string, args: readonly string[] }> = []
+    const capturing: CommandRunner = async (command, args) => {
+      calls.push({ command, args })
+      const key = `${command} ${args.join(' ')}`
+      const hit = aheadScript()[key]
+      if (hit === undefined) return { ok: false, code: 127, stdout: '', stderr: `unscripted: ${key}` }
+      return { ok: hit.ok, code: hit.ok ? 0 : 1, stdout: hit.stdout ?? '', stderr: hit.stderr ?? '' }
+    }
     const ctx = new Context()
     contexts.push(ctx)
     const gateway = new UpdateGateway(ctx, {}, {
       facts: SOURCE_FACTS,
-      runner: runner(script),
-      spawner: planPath => { spawned.push(planPath) },
+      runner: capturing,
+      spawner: () => {},
     })
-    return { gateway, spawned }
-  }
-
-  it('does not mistake the top-level help for the engine (dsh without update)', async () => {
-    home()
-    // Exactly what a commander generation without the subcommand prints for
-    // `update --help`: the TOP-LEVEL usage, with exit code 0.
-    const { gateway, spawned } = await mountWithRealProbe(aheadScript({
-      [probeKey]: { ok: true, stdout: 'Usage: dsh [options] [command] [args...]\n\nboot a profile\n' },
-    }))
     const result = await gateway.apply()
     expect(result.accepted).toBe(true)
     expect(result.mode).toBe('plugin-local')
-    expect(spawned).toHaveLength(1)
-  })
-
-  it('a failing probe falls back to the plugin-local supervisor', async () => {
-    home()
-    const { gateway, spawned } = await mountWithRealProbe(aheadScript({
-      [probeKey]: { ok: false, stdout: '', stderr: 'error: unknown command' },
-    }))
-    const result = await gateway.apply()
-    expect(result.accepted).toBe(true)
-    expect(result.mode).toBe('plugin-local')
-    expect(spawned).toHaveLength(1)
-  })
-
-  it('recognizes the update subcommand’s own help and delegates', async () => {
-    home()
-    const { gateway, spawned } = await mountWithRealProbe(aheadScript({
-      [probeKey]: { ok: true, stdout: 'Usage: dsh update [options] [command] <command>\n\nengine subcommands\n' },
-      [applyKey]: { ok: true, stdout: '{"accepted":true}' },
-    }))
-    const result = await gateway.apply()
-    expect(result.accepted).toBe(true)
-    expect(result.mode).toBe('engine')
-    expect(spawned).toEqual([])
+    // Only git facts ran — no launcher subprocess, no probe, no delegation.
+    expect(calls.every(call => call.command === 'git')).toBe(true)
   })
 })

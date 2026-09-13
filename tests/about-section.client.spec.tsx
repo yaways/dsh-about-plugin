@@ -30,7 +30,6 @@ function statusFixture(): UpdateStatus {
   return {
     pluginVersion: '0.1.0',
     dsh: { version: '0.1.5-rc.2', anchor: '/checkout/apps/cli', form: 'source', gitRoot: '/checkout' },
-    engine: { requiredVersion: '0.2.0', available: null },
     channels: [
       { channel: 'source', available: true },
       { channel: 'npm', available: true },
@@ -64,20 +63,19 @@ function renderSection(over: Partial<Face> = {}, t: Translate = translator(en)):
 }
 
 describe('AboutSection', () => {
-  it('renders version facts, engine note, and history', async () => {
+  it('renders version facts and history', async () => {
     renderSection()
     expect(await screen.findByText('0.1.5-rc.2')).toBeDefined()
     expect(screen.getByText('source checkout')).toBeDefined()
     expect(screen.getByText('/checkout/apps/cli')).toBeDefined()
     expect(screen.getByText('dsh-about-plugin 0.1.0')).toBeDefined()
-    expect(screen.getByText(/update engine shipped with dsh ≥ 0.2.0/i)).toBeDefined()
     expect(screen.getByText('restarted')).toBeDefined()
   })
 
   it('renders localized copy in zh', async () => {
     renderSection({}, translator(zh))
     expect(await screen.findByText('源码安装')).toBeDefined()
-    expect(screen.getByText('升级引擎')).toBeDefined()
+    expect(screen.getByText('升级渠道')).toBeDefined()
     expect(screen.getByText('升级记录')).toBeDefined()
   })
 

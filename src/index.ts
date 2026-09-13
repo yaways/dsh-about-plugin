@@ -9,10 +9,13 @@
  * half mounts its own `./remote` artifact, so nothing here requires a change
  * in the application's Remote assembly.
  *
- * Version gating follows the published plan: the plugin declares
- * `engines.dsh` in its manifest, checks the running installation's version at
- * mount, and REPORTS a requirement instead of throwing — a too-old engine
- * shows its requirement in the panel, not a broken panel.
+ * The apply path is entirely plugin-local: it runs its own supervised
+ * sequence for this surface. There is deliberately NO delegation to a
+ * launcher-side update engine — no released dsh ships one, and pre-wiring a
+ * call against a command name and output shape that do not exist is
+ * speculation (a future engine may use a different subcommand or schema).
+ * If an official engine ever lands, the delegation belongs here and is
+ * written against its real, documented interface.
  */
 
 import { readFileSync } from 'node:fs'
@@ -26,10 +29,7 @@ import { appendEntry, isTerminal, lastFor, pendingFor, readEntries, statusFilePa
 import type {
   ApplyResult, ChannelRow, CheckResult, HistoryEntry, UpdateStatus, VersionFacts,
 } from './schemas.ts'
-import { atLeast, resolveDshHome } from './version.ts'
-
-/** Minimum dsh version whose launcher ships the `dsh update` engine. */
-export const ENGINE_REQUIRED_VERSION = '0.2.0'
+import { resolveDshHome } from './version.ts'
 
 /** How many status-file entries the panel's history view reads. */
 const HISTORY_LIMIT = 30
@@ -37,14 +37,12 @@ const HISTORY_LIMIT = 30
 /** Grace between the apply response and this surface's own exit. */
 const EXIT_GRACE_MS = 750
 
-/** Test seams: production defaults are the real runner, spawner, and prober. */
+/** Test seams: production defaults are the real runner and spawner. */
 export interface GatewayTools {
   /** Command runner; defaults to the real bounded spawner. */
   readonly runner?: CommandRunner
   /** Supervisor spawn; defaults to the real detached spawn. */
   readonly spawner?: (planPath: string) => void
-  /** Engine probe override. */
-  readonly engineProbe?: () => Promise<boolean>
   /** Installation facts override; defaults to live discovery. */
   readonly facts?: VersionFacts
 }
@@ -112,9 +110,6 @@ export class UpdateGateway extends TypertRemoteService {
   private readonly facts: VersionFacts
   private readonly runner: CommandRunner
   private readonly spawner: (planPath: string) => void
-  private readonly engineProbe: () => Promise<boolean>
-  /** Lazily probed engine availability (cached after the first apply). */
-  private engineAvailable: boolean | undefined
 
   constructor(ctx: Context, config: unknown = {}, tools: GatewayTools = {}) {
     super(ctx, 'update')
@@ -122,11 +117,8 @@ export class UpdateGateway extends TypertRemoteService {
     this.facts = tools.facts ?? discoverInstallation()
     this.runner = tools.runner ?? runCommand
     this.spawner = tools.spawner ?? spawnSupervisor
-    this.engineProbe = tools.engineProbe ?? (() => this.probeEngine())
-    this.engineAvailable = undefined
     this.ctx.logger.info(
-      `dsh-about-plugin: mounted (dsh ${this.facts.version}, form ${this.facts.form}, `
-      + `engine ${atLeast(this.facts.version, ENGINE_REQUIRED_VERSION) ? 'version-sufficient' : `requires >= ${ENGINE_REQUIRED_VERSION}`})`,
+      `dsh-about-plugin: mounted (dsh ${this.facts.version}, form ${this.facts.form})`,
     )
     this.reconcilePendingAttempt()
   }
@@ -189,42 +181,12 @@ export class UpdateGateway extends TypertRemoteService {
     ]
   }
 
-  /**
-   * Probe whether the running launcher ships the `dsh update` engine.
-   *
-   * The probe runs the launcher's own argument surface (`update --help`) and
-   * requires the SUBCOMMAND's own help: a commander program answers any
-   * `--help` with its top-level usage and exit code 0 — including a dsh
-   * generation with no `update` command at all — so the exit code alone
-   * cannot distinguish them. The engine exists iff the printed usage names
-   * the update command itself (`Usage: dsh update …`). Cached per process.
-   */
-  private async probeEngine(): Promise<boolean> {
-    if (this.engineAvailable !== undefined) return this.engineAvailable
-    const entry = process.argv[1]
-    if (entry === undefined || entry === '') {
-      this.engineAvailable = false
-      return false
-    }
-    const probe = await this.runner(
-      process.execPath,
-      [...process.execArgv, entry, 'update', '--help'],
-      { cwd: process.cwd(), timeoutMs: 20_000 },
-    )
-    this.engineAvailable = probe.ok && /^Usage:\s+\S+\s+update\b/m.test(probe.stdout)
-    return this.engineAvailable
-  }
-
   /** Version facts and history for the panel's at-rest view. */
   @Remote('status')
   async status(): Promise<UpdateStatus> {
     return {
       pluginVersion: pluginVersion(),
       dsh: this.facts,
-      engine: {
-        requiredVersion: ENGINE_REQUIRED_VERSION,
-        available: this.engineAvailable ?? null,
-      },
       channels: this.channelRows(),
       history: readEntries(resolveDshHome(), this.config.historyLimit),
       statusFile: statusFilePath(),
@@ -239,14 +201,12 @@ export class UpdateGateway extends TypertRemoteService {
   }
 
   /**
-   * Start (or delegate) the supervised upgrade.
+   * Start the plugin-local supervised upgrade for this surface.
    *
    * Preflight fails loud before any change: the source channel requires a
-   * clean worktree and an allowlisted origin. With the launcher-side engine
-   * present the call delegates to `dsh update apply`; otherwise the
-   * plugin-local supervisor runs the recorded sequence for this single
-   * surface. Either way the response reaches the client before this surface
-   * exits.
+   * clean worktree and an allowlisted origin. The supervisor runs the
+   * recorded sequence only after this pid exits; the response reaches the
+   * client before this surface exits.
    */
   @Remote('apply')
   async apply(): Promise<ApplyResult> {
@@ -283,26 +243,6 @@ export class UpdateGateway extends TypertRemoteService {
     const origin = await this.runner('git', ['remote', 'get-url', 'origin'], { cwd: this.facts.gitRoot })
     if (!origin.ok || !originAllowed(this.channelConfig.originAllowlist, origin.stdout.trim())) {
       return reject('origin is not in the allowlist — refusing to upgrade')
-    }
-    if (await this.engineProbe()) {
-      // The engine owns the general sequence: multi-surface shutdown through
-      // the pid registry, the supervise entry, and the verified handshake.
-      // This surface does not exit itself — the engine's shutdown request
-      // reaches it through the mounted lifecycle plugin.
-      const entry = process.argv[1] ?? 'dsh'
-      const engine = await this.runner(
-        process.execPath,
-        [...process.execArgv, entry, 'update', 'apply', '--json'],
-        { cwd: process.cwd(), timeoutMs: 30_000 },
-      )
-      if (engine.ok) {
-        appendEntry(home, {
-          at: Date.now(), event: 'started', anchor: this.facts.gitRoot,
-          detail: 'delegated to the launcher update engine', from: fromSha, to: toSha,
-        })
-        return { accepted: true, mode: 'engine', fromSha, statusFile }
-      }
-      return reject(`the engine rejected the apply: ${engine.stderr.trim() !== '' ? engine.stderr.trim() : engine.stdout.trim()}`)
     }
     const plan = buildUpgradePlan(this.facts, this.channelConfig, fromSha, toSha)
     const planPath = writePlan(plan)

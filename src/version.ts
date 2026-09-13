@@ -88,11 +88,6 @@ export function compareVersions(left: string, right: string): number {
   return 0
 }
 
-/** Whether `version` satisfies `version >= minimum` under SemVer ordering. */
-export function atLeast(version: string, minimum: string): boolean {
-  return compareVersions(version, minimum) >= 0
-}
-
 /** Resolve the DSH home directory exactly as the launcher does. */
 export function resolveDshHome(): string {
   const fromEnv = process.env.DSH_HOME

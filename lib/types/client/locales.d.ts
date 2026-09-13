@@ -9,10 +9,6 @@ export declare const zh: {
     'version.form.unknown': string;
     'version.anchor': string;
     'version.plugin': string;
-    'engine.title': string;
-    'engine.ok': string;
-    'engine.required': string;
-    'engine.probing': string;
     'channels.title': string;
     'channels.source': string;
     'channels.npm': string;
@@ -65,10 +61,6 @@ export declare const en: {
     'version.form.unknown': string;
     'version.anchor': string;
     'version.plugin': string;
-    'engine.title': string;
-    'engine.ok': string;
-    'engine.required': string;
-    'engine.probing': string;
     'channels.title': string;
     'channels.source': string;
     'channels.npm': string;

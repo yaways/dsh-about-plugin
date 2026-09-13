@@ -30,16 +30,6 @@ export interface ChannelRow {
     /** Why the channel is unavailable, when it is. */
     readonly note?: string;
 }
-/** Engine (launcher-side `dsh update` subcommands) availability facts. */
-export interface EngineFacts {
-    /** First dsh version whose launcher ships the `dsh update` engine. */
-    readonly requiredVersion: string;
-    /**
-     * Whether the running launcher answers `dsh update`. `null` means not
-     * probed yet (the probe is lazy: it only runs when an upgrade is applied).
-     */
-    readonly available: boolean | null;
-}
 /** One append-only record from the upgrade status file. */
 export interface HistoryEntry {
     /** Wall-clock milliseconds when the entry was appended. */
@@ -61,8 +51,6 @@ export interface UpdateStatus {
     readonly pluginVersion: string;
     /** Version facts of the running dsh installation. */
     readonly dsh: VersionFacts;
-    /** Engine availability. */
-    readonly engine: EngineFacts;
     /** Per-channel availability rows. */
     readonly channels: readonly ChannelRow[];
     /** Most recent status-file entries, oldest first. */
@@ -132,10 +120,10 @@ export interface CheckResult {
 }
 /** `update/apply` result. */
 export interface ApplyResult {
-    /** Whether a supervised upgrade was started (or delegated). */
+    /** Whether a supervised upgrade was started. */
     readonly accepted: boolean;
     /** Which apply path answered. */
-    readonly mode: 'plugin-local' | 'engine' | 'rejected';
+    readonly mode: 'plugin-local' | 'rejected';
     /** Why the request was rejected, when it was. */
     readonly reason?: string;
     /** Recorded pre-upgrade commit SHA. */
@@ -154,10 +142,6 @@ export declare const updateStatusSchema: z.ZodReadonly<z.ZodObject<{
             unknown: "unknown";
         }>;
         gitRoot: z.ZodOptional<z.ZodString>;
-    }, z.core.$strip>>;
-    engine: z.ZodReadonly<z.ZodObject<{
-        requiredVersion: z.ZodString;
-        available: z.ZodNullable<z.ZodBoolean>;
     }, z.core.$strip>>;
     channels: z.ZodArray<z.ZodReadonly<z.ZodObject<{
         channel: z.ZodEnum<{
@@ -225,7 +209,6 @@ export declare const applyResultSchema: z.ZodReadonly<z.ZodObject<{
     accepted: z.ZodBoolean;
     mode: z.ZodEnum<{
         "plugin-local": "plugin-local";
-        engine: "engine";
         rejected: "rejected";
     }>;
     reason: z.ZodOptional<z.ZodString>;

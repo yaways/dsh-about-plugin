@@ -35,17 +35,6 @@ export interface ChannelRow {
   readonly note?: string
 }
 
-/** Engine (launcher-side `dsh update` subcommands) availability facts. */
-export interface EngineFacts {
-  /** First dsh version whose launcher ships the `dsh update` engine. */
-  readonly requiredVersion: string
-  /**
-   * Whether the running launcher answers `dsh update`. `null` means not
-   * probed yet (the probe is lazy: it only runs when an upgrade is applied).
-   */
-  readonly available: boolean | null
-}
-
 /** One append-only record from the upgrade status file. */
 export interface HistoryEntry {
   /** Wall-clock milliseconds when the entry was appended. */
@@ -76,8 +65,6 @@ export interface UpdateStatus {
   readonly pluginVersion: string
   /** Version facts of the running dsh installation. */
   readonly dsh: VersionFacts
-  /** Engine availability. */
-  readonly engine: EngineFacts
   /** Per-channel availability rows. */
   readonly channels: readonly ChannelRow[]
   /** Most recent status-file entries, oldest first. */
@@ -152,10 +139,10 @@ export interface CheckResult {
 
 /** `update/apply` result. */
 export interface ApplyResult {
-  /** Whether a supervised upgrade was started (or delegated). */
+  /** Whether a supervised upgrade was started. */
   readonly accepted: boolean
   /** Which apply path answered. */
-  readonly mode: 'plugin-local' | 'engine' | 'rejected'
+  readonly mode: 'plugin-local' | 'rejected'
   /** Why the request was rejected, when it was. */
   readonly reason?: string
   /** Recorded pre-upgrade commit SHA. */
@@ -179,11 +166,6 @@ const channelRow = z.object({
   note: z.string().optional(),
 }).readonly()
 
-const engineFacts = z.object({
-  requiredVersion: z.string(),
-  available: z.boolean().nullable(),
-}).readonly()
-
 const historyEntry = z.object({
   at: z.number(),
   event: z.enum([
@@ -198,7 +180,6 @@ const historyEntry = z.object({
 export const updateStatusSchema = z.object({
   pluginVersion: z.string(),
   dsh: versionFacts,
-  engine: engineFacts,
   channels: z.array(channelRow),
   history: z.array(historyEntry),
   statusFile: z.string(),
@@ -244,7 +225,7 @@ export const checkResultSchema = z.object({
 
 export const applyResultSchema = z.object({
   accepted: z.boolean(),
-  mode: z.enum(['plugin-local', 'engine', 'rejected']),
+  mode: z.enum(['plugin-local', 'rejected']),
   reason: z.string().optional(),
   fromSha: z.string().optional(),
   statusFile: z.string(),

@@ -4,7 +4,7 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { atLeast, compareVersions, resolveDshHome } from '../src/version.ts'
+import { compareVersions, resolveDshHome } from '../src/version.ts'
 
 const tempDirs: string[] = []
 afterEach(() => {
@@ -42,14 +42,6 @@ describe('compareVersions', () => {
     expect(compareVersions('not-a-version', 'not-a-version')).toBe(0)
     // Non-conforming spellings fall to raw string order; both directions stay stable.
     expect(compareVersions('banana', 'apple')).toBeGreaterThan(0)
-  })
-})
-
-describe('atLeast', () => {
-  it('gates on the minimum', () => {
-    expect(atLeast('0.2.0', '0.2.0')).toBe(true)
-    expect(atLeast('0.2.1-rc.1', '0.2.0')).toBe(true)
-    expect(atLeast('0.1.5-rc.2', '0.2.0')).toBe(false)
   })
 })
 

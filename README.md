@@ -4,12 +4,11 @@ DeepSeek Harness 的「关于」面板与自助升级插件：在 Web 设置对�
 
 ![设置 → 关于面板](docs/about-panel.jpg)
 
-> 截图：设置 → 关于。版本卡片（版本 / 源码安装形态 / 安装位置 / 插件版本）、升级引擎可用性说明、双渠道检查结果（「已是最新」+「工作树有未提交修改」+ SHA 对比），以及底部的升级记录。此例中工作树有未提交改动，故「升级并重启」保持禁用。
+> 截图：设置 → 关于。版本卡片（版本 / 源码安装形态 / 安装位置 / 插件版本）、双渠道检查结果（「已是最新」+「工作树有未提交修改」+ SHA 对比），以及底部的升级记录。此例中工作树有未提交改动，故「升级并重启」保持禁用。
 
 ```
 设置 → 关于
 ├── DeepSeek Harness    版本 / 安装形态 / 安装位置 / 插件版本
-├── 升级引擎            引擎可用性说明（dsh ≥ 0.2.0 自带引擎；否则用插件本地序列）
 ├── 升级渠道            源码渠道（git）与 npm 渠道，检查按钮 + 待更新提交预览
 ├── 升级并重启          风险确认 → 受监督升级 → 自动重连
 └── 升级记录            $DSH_HOME/update-log.jsonl 的尾部条目
@@ -68,15 +67,15 @@ git@github.com:deepseek-ai/deepseek-harness.git
 | `incomingLimit` / `dirtyFileLimit` | 20 | 变更预览上限 |
 | `historyLimit` | 30 | 面板读取的状态文件条数 |
 
-## 升级引擎委托
+## 为什么没有引擎委托
 
-`apply` 先探测运行中的启动器是否自带 `dsh update`（`update --help` 的输出须是 `update` 子命令自己的 usage 而非顶层帮助 —— commander 对任何 `--help` 都打印顶层帮助并以 0 退出，仅看退出码会把没有引擎的版本误判为有；按进程缓存）：有则委托 `dsh update apply`（引擎拥有多面关停与 pid 登记），没有才走插件本地序列。面板内的**检查始终可用**。
+`apply` **只走插件本地序列**。官方 dsh 从未承诺过升级引擎（无 roadmap、无 issue、无 release note），预埋一条对不存在接口的调用（猜命令名、猜输出 schema）是投机：官方将来若用别的命令名，它是死代码；若恰好同名而语义不同，探测命中后打进未知接口，行为不可预期。若官方引擎真的落地，委托逻辑届时按其**真实文档**补在这里即可（约 30 行）。
 
 ## 开发
 
 ```bash
 pnpm install   # prepare 链接同级 deepseek-harness 检出中的 @deepseek-ai/* 对等依赖（DSH_ABOUT_HARNESS_CHECKOUT 可覆盖）
-pnpm test      # 85 项：版本比较、安装识别、渠道探测、状态文件、监督进程（真实产物级集成）、RPC schema、组件
+pnpm test      # 83 项：版本比较、安装识别、渠道探测、状态文件、监督进程（真实产物级集成）、RPC schema、组件
 pnpm run build # tsc → lib/types，tsdown → 五个产物
 node scripts/verify-browser.mjs "<带 token 的服务器 URL>" [截图目录]   # 浏览器级端到端验证
 ```
@@ -95,5 +94,5 @@ node scripts/verify-browser.mjs "<带 token 的服务器 URL>" [截图目录]   
 ## 限制
 
 - npm 渠道目前只做**比较展示**（不执行升级）；打包可执行文件自带更新生命周期，插件只报告形态。
-- 引擎（P1，`dsh update`）落地后，插件自动委托；当前由插件本地序列覆盖单面场景。
-- `engines.dsh` 是声明性的：插件在挂载时探测并**报告**引擎要求（面板可见），不会因此抛错。
+- 升级序列**只等本面自己的 pid**：同一源码 checkout 上若还跑着其他 dsh 面（headless、第二个 web），它们存活期间树仍会被改写。多面协调停机需要上游 pid 注册表（官方未规划）；短期缓解是把同锚点进程纳入等待。
+- `engines.dsh` 为 `>=0.1.0`，声明性下限（当前没有需要拒绝的旧版本）。

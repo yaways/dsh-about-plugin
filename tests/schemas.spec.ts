@@ -18,7 +18,6 @@ function statusPayload(): object {
       form: 'source',
       gitRoot: '/checkout',
     },
-    engine: { requiredVersion: '0.2.0', available: null },
     channels: [
       { channel: 'source', available: true },
       { channel: 'npm', available: false, note: 'install form unknown' },
@@ -140,21 +139,18 @@ describe('applyResultSchema', () => {
     })).not.toThrow()
   })
 
-  it('accepts an engine-delegated result', () => {
-    expect(() => applyResultSchema.parse({
-      accepted: true, mode: 'engine', fromSha: 'aaaa', statusFile: '/x/update-log.jsonl',
-    })).not.toThrow()
-  })
-
   it('accepts a rejection with its reason', () => {
     expect(() => applyResultSchema.parse({
       accepted: false, mode: 'rejected', reason: 'dirty', statusFile: '/x/update-log.jsonl',
     })).not.toThrow()
   })
 
-  it('rejects an unknown mode', () => {
+  it('rejects an unknown mode — including the removed engine mode', () => {
     expect(() => applyResultSchema.parse({
       accepted: true, mode: 'magic', statusFile: '/x/update-log.jsonl',
+    })).toThrow()
+    expect(() => applyResultSchema.parse({
+      accepted: true, mode: 'engine', statusFile: '/x/update-log.jsonl',
     })).toThrow()
   })
 })

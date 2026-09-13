@@ -14,7 +14,7 @@ import type { AboutLocaleKey } from './locales.ts'
 
 /** Registration-side Remote face the section consumes. */
 export interface AboutSectionInjected {
-  /** Read the at-rest status (version facts, engine, channels, history). */
+  /** Read the at-rest status (version facts, channels, history). */
   readonly status: () => Promise<UpdateStatus>
   /** Run a channel-aware update check. */
   readonly check: () => Promise<CheckResult>
@@ -164,17 +164,6 @@ export function AboutSection({ t, status, check, apply }: AboutSectionProps) {
             <span className="dsh-about-factLabel">{t('version.plugin')}</span>
             <span>dsh-about-plugin {current.pluginVersion}</span>
           </div>
-        </section>
-      ) : null}
-
-      {current !== undefined ? (
-        <section className={`dsh-about-card${current.engine.available === false ? ' dsh-about-warn' : ''}`} aria-label={t('engine.title')}>
-          <h3 className="dsh-about-cardTitle">{t('engine.title')}</h3>
-          <p className="dsh-about-note">
-            {current.engine.available === true
-              ? t('engine.ok', { version: current.engine.requiredVersion })
-              : t('engine.required', { version: current.engine.requiredVersion })}
-          </p>
         </section>
       ) : null}
 
